@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 import sys
 import csv
-import urllib.request
-import urllib.parse
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib2 import urlopen
+
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 import time
 import os
 import shutil
@@ -19,20 +26,23 @@ def download_files(rows):
     temp_path = os.path.join('.', 'downloaded_files', m.hexdigest())
     try:
         os.makedirs(temp_path)
-    except FileExistsError:
+    except OSError as e:
         pass
 
     # download each file
     for row in rows:
         text, url = row
-        parsed_url = urllib.parse.urlparse(url)
+        parsed_url = urlparse(url)
         file_name = os.path.basename(parsed_url.path)
 
         destination = os.path.join(temp_path, file_name)
         row.append(destination)
         print('Downloading {} -> {}'.format(url, destination))
-        with urllib.request.urlopen(url) as response, open(destination, 'wb') as out_file:
-            shutil.copyfileobj(response, out_file)
+        response = urlopen(url)
+        out_file = open(destination, 'wb')
+        shutil.copyfileobj(response, out_file)
+        response.close()
+        out_file.close()
     print("Done downloading.")
     return rows
 
